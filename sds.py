@@ -52,6 +52,7 @@ if 'test' not in contents:
 
 train_dir = os.path.join(cwd, 'train')
 valid_dir = os.path.join(cwd, 'valid')
+test_dir = os.path.join(cwd, 'test')
 sample_dir = os.path.join(cwd, 'sample')
 strain_dir = os.path.join(sample_dir, 'train')
 svalid_dir = os.path.join(sample_dir, 'valid')
@@ -85,7 +86,7 @@ if ('valid' in contents) or ('sample' in contents):
 v_frac = 0.1
 
 # The number of sample training elements per class.
-sp_count = 10
+sp_count = 16
 
 print("Creating validation and sample sets.")
 
@@ -123,4 +124,14 @@ for cls in os.listdir(train_dir):
     copied_count += 1
   print("done.")
     
+os.mkdir(stest_dir)
+test_files = np.array(os.listdir(test_dir))
+np.random.shuffle(test_files)
+print("Creating sample test set...", end="")
+for fl in test_files[:sp_count]:
+  starting_path = os.path.join(test_dir, fl)
+  target_path = os.path.join(stest_dir, fl)
+  copyfile(starting_path, target_path)
+print("done.")
+
 print("Done. Happy machine teaching!")
