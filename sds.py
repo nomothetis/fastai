@@ -56,7 +56,7 @@ test_dir = os.path.join(cwd, 'test')
 sample_dir = os.path.join(cwd, 'sample')
 strain_dir = os.path.join(sample_dir, 'train')
 svalid_dir = os.path.join(sample_dir, 'valid')
-stest_dir = os.path.join(sample_dir, 'test')
+stest_dir = os.path.join(sample_dir, 'test', 'unknown')
 
 if ('valid' in contents) or ('sample' in contents):
   valid_yes = ['y', 'Y', 'yes', 'Yes', 'YES']
@@ -124,7 +124,7 @@ for cls in os.listdir(train_dir):
     copied_count += 1
   print("done.")
     
-os.mkdir(stest_dir)
+os.makedirs(stest_dir)
 test_files = np.array(os.listdir(test_dir))
 np.random.shuffle(test_files)
 print("Creating sample test set...", end="")
@@ -132,6 +132,14 @@ for fl in test_files[:sp_count]:
   starting_path = os.path.join(test_dir, fl)
   target_path = os.path.join(stest_dir, fl)
   copyfile(starting_path, target_path)
+print("done.")
+
+print("Moving all test items into 'unknown' class...", end = "")
+os.mkdir(os.path.join(test_dir, 'unknown'))
+for fl in test_files:
+  starting_path = os.path.join(test_dir, fl)
+  target_path = os.path.join(test_dir, 'unknown', fl)
+  os.rename(starting_path, target_path)
 print("done.")
 
 print("Done. Happy machine teaching!")
