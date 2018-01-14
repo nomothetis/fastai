@@ -42,6 +42,7 @@ num_batches = testiter.n // BATCH_SIZE
 remainder = testiter.n % BATCH_SIZE
 
 for rotation in range(num_batches):
+  print('Batch 0: 1-%d' % (rotation, num_batches * BATCH_SIZE))
   data = np.concatenate([testiter.next() for i in range(BATCH_SIZE)])
   filenames = testiter.filenames[rotation * BATCH_SIZE:(rotation+1) * BATCH_SIZE]
   batches_dir = os.path.join(target_dir, 'batch%d-bc' % rotation)
@@ -49,12 +50,14 @@ for rotation in range(num_batches):
   save_array(batches_dir, data)
   save_array(filenames_dir, filenames)
 
-data = np.concatenate([testiter.next() for i in range(remainder)])
-filenames = testiter.filenames[num_batches * BATCH_SIZE:(num_batches+1) * BATCH_SIZE]
-batches_dir = os.path.join(target_dir, 'batch%d-bc' % (num_batches + 1))
-filenames_dir = os.path.join(target_dir, 'files%d-bc' % (num_batches + 1))
-save_array(batches_dir, data)
-save_array(filenames_dir, filenames)
+if remainder > 0:
+  print('Batch %d: 1-%d' % (num_batches, (num_batches-1) * BATCH_SIZE + remainder))
+  data = np.concatenate([testiter.next() for i in range(remainder)])
+  filenames = testiter.filenames[num_batches * BATCH_SIZE:(num_batches+1) * BATCH_SIZE]
+  batches_dir = os.path.join(target_dir, 'batch%d-bc' % num_batches)
+  filenames_dir = os.path.join(target_dir, 'files%d-fn' % num_batches)
+  save_array(batches_dir, data)
+  save_array(filenames_dir, filenames)
 
 
 print('done')
