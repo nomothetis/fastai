@@ -4,6 +4,11 @@ import keras
 from keras.preprocessing import image
 import numpy as np
 
+from keras import backend as K
+
+# Explicitly set Theano image ordering.
+K.set_image_dim_ordering('th')
+
 def save_array(fname, arr):
     c=bcolz.carray(arr, rootdir=fname, mode='w')
     c.flush()
@@ -41,23 +46,32 @@ testiter = gen.flow_from_directory(
 num_batches = testiter.n // BATCH_SIZE
 remainder = testiter.n % BATCH_SIZE
 
+print('Preprocessing: ')
 for rotation in range(num_batches):
-  print('Batch 0: 1-%d' % (rotation, num_batches * BATCH_SIZE))
+  print('  Batch %d: %d-%d...' % (rotation,
+                             rotation * BATCH_SIZE,
+                             (rotation + 1) * BATCH_SIZE - 1))
   data = np.concatenate([testiter.next() for i in range(BATCH_SIZE)])
   filenames = testiter.filenames[rotation * BATCH_SIZE:(rotation+1) * BATCH_SIZE]
-  batches_dir = os.path.join(target_dir, 'batch%d-bc' % rotation)
-  filenames_dir = os.path.join(target_dir, 'files%d-fn' % rotation)
-  save_array(batches_dir, data)
+  batch_dir = os.path.join(target_dir, 'batch%d' % rotation)
+  os.makedirs(batch_dir)
+  data_dir = os.path.join(batch_dir, 'bc')
+  filenames_dir = os.path.join(batch_dir, 'fn')
+  save_array(data_dir, data)
   save_array(filenames_dir, filenames)
 
 if remainder > 0:
-  print('Batch %d: 1-%d' % (num_batches, (num_batches-1) * BATCH_SIZE + remainder))
+  print('  Batch %d: %d-%d...' % (num_batches,
+                                  num_batches * BATCH_SIZE,
+                                  num_batches * BATCH_SIZE + remainder))
   data = np.concatenate([testiter.next() for i in range(remainder)])
   filenames = testiter.filenames[num_batches * BATCH_SIZE:(num_batches+1) * BATCH_SIZE]
-  batches_dir = os.path.join(target_dir, 'batch%d-bc' % num_batches)
-  filenames_dir = os.path.join(target_dir, 'files%d-fn' % num_batches)
-  save_array(batches_dir, data)
+  batch_dir = os.path.join(target_dir, 'batch%d' % num_batches)
+  os.makedirs(batch_dir)
+  data_dir = os.path.join(batch_dir, 'bc')
+  filenames_dir = os.path.join(batch_dir, 'fn')
+  save_array(data_dir, data)
   save_array(filenames_dir, filenames)
 
 
-print('done')
+print('Done!')
