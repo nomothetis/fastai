@@ -2,8 +2,11 @@ from __future__ import print_function
 import os,sys,shutil
 from shutil import copyfile
 import os.path
-import numpy as np
 from os.path import basename
+import math
+import numpy as np
+import pandas as pd
+import random
 
 def restore(from_dir, to_dir, indent_string=""):
   """Returns files to their original directory under to_dir.
@@ -95,35 +98,45 @@ os.mkdir(sample_dir)
 os.mkdir(strain_dir)
 os.mkdir(svalid_dir)
 
-for cls in os.listdir(train_dir):
-  cls_path = os.path.join(train_dir, cls)
-  cls_target = os.path.join(valid_dir, cls)
-  cls_sample_vtarget = os.path.join(svalid_dir, cls)
+drv = pd.read_csv('dlist/driver_imgs_list.csv', header=0)
+for cls in pd.unique(drv.loc[:,'classname']):
+  print('Class %s...' % cls, end="")
+  sample_imgs = None
+  val_imgs = None
+  for dv in pd.unique(drv.loc[:,'subject']):
+    subset = drv[(drv.classname == cls) & (drv.subject == dv)].copy()
+    rsubset = subset.reindex(np.random.permutation(subset.index))
+    val_count = int(math.ceil(len(subset) * v_frac))
+    if val_imgs is None:
+      val_imgs = rsubset.head(val_count)
+    else:
+      val_imgs = val_imgs.append(rsubset.head(val_count), ignore_index=False)
+    if sample_imgs is None:
+      sample_imgs = rsubset.head(1)
+    else:
+      sample_imgs = sample_imgs.append(rsubset.head(1), ignore_index=False)
+  # Copy the samples first, since they also belong to the validation set.
   cls_sample_ttarget = os.path.join(strain_dir, cls)
-  os.mkdir(cls_target)
-  os.mkdir(cls_sample_vtarget)
-  os.mkdir(cls_sample_ttarget)
-  files = np.array(os.listdir(os.path.join(train_dir, cls)))
-  count = len(files)
-  valid_count = int(np.round(count * v_frac))
-  sp_count = min(sp_count, int(valid_count * 0.9))
-  sample_count = int(np.round(sp_count * v_frac))
-  print("  Class '%s'..." % cls, end="")
-  np.random.shuffle(files)
-  copied_count = 0
-  for fl in files[:max(valid_count, sample_count+sp_count)]:
-    starting_path = os.path.join(cls_path, fl)
-    target_path = os.path.join(cls_target, fl)
-    if copied_count < sp_count:
-      copyfile(starting_path, os.path.join(strain_dir, cls, fl))
-    elif copied_count < sp_count+sample_count:
-      copyfile(starting_path, os.path.join(svalid_dir, cls, fl))
+  cls_sample_vtarget = os.path.join(svalid_dir, cls)
+  os.makedirs(cls_sample_ttarget)
+  os.makedirs(cls_sample_vtarget)
+  for index, sample in sample_imgs.head(len(sample_imgs) - 1).iterrows():
+    source = os.path.join(train_dir, cls, sample.img)
+    target = os.path.join(cls_sample_ttarget, sample.img)
+    copyfile(source, target)
+  vsource = os.path.join(train_dir, cls, sample.tail().img)
+  vtarget = os.path.join(cls_sample_vtarget, sample.tail().img)
+  copyfile(vsource, vtarget)
 
-    if copied_count < valid_count:
-      os.rename(starting_path, target_path)
-    copied_count += 1
-  print("done.")
-    
+  # Now move the validation set.
+  valid_cls_dir = os.path.join(valid_dir, cls)
+  os.makedirs(valid_cls_dir)
+  for index, sample in val_imgs.iterrows():
+    source = os.path.join(train_dir, cls, sample.img)
+    target = os.path.join(valid_cls_dir, sample.img)
+    os.rename(source, target)
+  print('done.')
+
 os.makedirs(stest_dir)
 test_files = np.array(os.listdir(test_dir))
 np.random.shuffle(test_files)
