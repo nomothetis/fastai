@@ -224,7 +224,7 @@ def create_submission(model, opt, iter_path):
     
     # Create the response file.
     file_column = [pth[8:] for pth in filenames]
-    clipped_preds = np.clip(preds, 0.05, 0.95)
+    clipped_preds = np.clip(preds, (1-0.980)/9, 0.98)
     preds_col = [','.join(['%.2f' % p for p in pred]) for pred in clipped_preds]
     entries = [','.join([f,p]) for f,p in zip(file_column, preds_col)]
     entries = np.array(entries)
