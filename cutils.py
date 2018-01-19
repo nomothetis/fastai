@@ -194,7 +194,6 @@ def process_model(model,opt,name,sub=False):
     if sub: create_submission(model, opt, iter_path)
 
 def create_submission(model, opt, iter_path):
-    print(np.__dict__)
     # Save the results to usable files.
     pp_test_dir = opt.pproc_dir() + '/test'
     if not os.path.exists(pp_test_dir):

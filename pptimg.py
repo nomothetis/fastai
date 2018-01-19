@@ -3,6 +3,7 @@ import bcolz
 import keras
 from keras.preprocessing import image
 import numpy as np
+from vgg16 import *
 
 from keras import backend as K
 
@@ -43,6 +44,15 @@ testiter = gen.flow_from_directory(
         class_mode=None,
         batch_size=1) # This is done on the CPU.
 
+vgg = Vgg16()
+ls = vgg.model.layers
+idx = 0
+for i in range(len(ls)):
+  if type(ls[i]) is MaxPooling2D:
+    idx = i
+
+conv_model = Sequential(layers=ls[:(idx+1)])
+
 num_batches = testiter.n // BATCH_SIZE
 remainder = testiter.n % BATCH_SIZE
 
@@ -51,26 +61,28 @@ for rotation in range(num_batches):
   print('  Batch %d: %d-%d...' % (rotation,
                              rotation * BATCH_SIZE,
                              (rotation + 1) * BATCH_SIZE - 1))
-  data = np.concatenate([testiter.next() for i in range(BATCH_SIZE)])
+  pdata = np.concatenate([testiter.next() for i in range(BATCH_SIZE)])
+  fdata = conv_model.predict(pdata, verbose=1)
   filenames = testiter.filenames[rotation * BATCH_SIZE:(rotation+1) * BATCH_SIZE]
   batch_dir = os.path.join(target_dir, 'batch%d' % rotation)
   os.makedirs(batch_dir)
   data_dir = os.path.join(batch_dir, 'bc')
   filenames_dir = os.path.join(batch_dir, 'fn')
-  save_array(data_dir, data)
+  save_array(data_dir, fdata)
   save_array(filenames_dir, filenames)
 
 if remainder > 0:
   print('  Batch %d: %d-%d...' % (num_batches,
                                   num_batches * BATCH_SIZE,
                                   num_batches * BATCH_SIZE + remainder))
-  data = np.concatenate([testiter.next() for i in range(remainder)])
+  pdata = np.concatenate([testiter.next() for i in range(remainder)])
+  fdata = conv_model.predict(pdata, verbose=1)
   filenames = testiter.filenames[num_batches * BATCH_SIZE:(num_batches+1) * BATCH_SIZE]
   batch_dir = os.path.join(target_dir, 'batch%d' % num_batches)
   os.makedirs(batch_dir)
   data_dir = os.path.join(batch_dir, 'bc')
   filenames_dir = os.path.join(batch_dir, 'fn')
-  save_array(data_dir, data)
+  save_array(data_dir, fdata)
   save_array(filenames_dir, filenames)
 
 

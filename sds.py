@@ -86,7 +86,7 @@ if ('valid' in contents) or ('sample' in contents):
   print("done.")
 
 # The fraction of the training set used for validation.
-v_frac = 0.1
+v_frac = 0.2
 
 # The number of sample training elements per class.
 sp_count = 16
@@ -100,34 +100,22 @@ os.mkdir(svalid_dir)
 
 drv = pd.read_csv('dlist/driver_imgs_list.csv', header=0)
 for cls in pd.unique(drv.loc[:,'classname']):
-  print('Class %s...' % cls, end="")
-  sample_imgs = None
+  print('Class %s...' % cls)
   val_imgs = None
-  for dv in pd.unique(drv.loc[:,'subject']):
+  sdf = pd.unique(drv.loc[:,'subject'])
+  np.random.shuffle(sdf)
+  drv_count = len(sdf)
+  val_drv_count =  int(math.ceil(drv_count * v_frac))
+  for dv in sdf[:val_drv_count]:
+    print('  Driver: %s' % dv)
     subset = drv[(drv.classname == cls) & (drv.subject == dv)].copy()
-    rsubset = subset.reindex(np.random.permutation(subset.index))
-    val_count = int(math.ceil(len(subset) * v_frac))
     if val_imgs is None:
-      val_imgs = rsubset.head(val_count)
+      val_imgs = subset
+      print('    initialized %d' % len(subset))
     else:
-      val_imgs = val_imgs.append(rsubset.head(val_count), ignore_index=False)
-    if sample_imgs is None:
-      sample_imgs = rsubset.head(1)
-    else:
-      sample_imgs = sample_imgs.append(rsubset.head(1), ignore_index=False)
-  # Copy the samples first, since they also belong to the validation set.
-  cls_sample_ttarget = os.path.join(strain_dir, cls)
-  cls_sample_vtarget = os.path.join(svalid_dir, cls)
-  os.makedirs(cls_sample_ttarget)
-  os.makedirs(cls_sample_vtarget)
-  for index, sample in sample_imgs.head(len(sample_imgs) - 1).iterrows():
-    source = os.path.join(train_dir, cls, sample.img)
-    target = os.path.join(cls_sample_ttarget, sample.img)
-    copyfile(source, target)
-  vsource = os.path.join(train_dir, cls, sample.tail().img)
-  vtarget = os.path.join(cls_sample_vtarget, sample.tail().img)
-  copyfile(vsource, vtarget)
-
+      val_imgs = val_imgs.append(subset)
+      print('    added %d' % len(subset))
+  print('total: %d' % len(val_imgs))
   # Now move the validation set.
   valid_cls_dir = os.path.join(valid_dir, cls)
   os.makedirs(valid_cls_dir)
@@ -136,6 +124,7 @@ for cls in pd.unique(drv.loc[:,'classname']):
     target = os.path.join(valid_cls_dir, sample.img)
     os.rename(source, target)
   print('done.')
+  
 
 os.makedirs(stest_dir)
 test_files = np.array(os.listdir(test_dir))
