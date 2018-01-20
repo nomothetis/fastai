@@ -86,7 +86,7 @@ if ('valid' in contents) or ('sample' in contents):
   print("done.")
 
 # The fraction of the training set used for validation.
-v_frac = 0.2
+v_frac = 0.15
 
 # The number of sample training elements per class.
 sp_count = 16
